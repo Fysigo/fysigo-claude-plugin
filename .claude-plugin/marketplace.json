@@ -1,0 +1,14 @@
+{
+  "name": "fysigo",
+  "owner": { "name": "Fysigo", "url": "https://fysigo.com" },
+  "metadata": {
+    "description": "Fysigo's Claude plugin: the Fysigo MCP connector plus a skill for running a coaching practice."
+  },
+  "plugins": [
+    {
+      "name": "fysigo",
+      "source": "./plugins/fysigo",
+      "description": "Training programs, clients, protocols, sleep and logs in Claude, through the Fysigo connector."
+    }
+  ]
+}
