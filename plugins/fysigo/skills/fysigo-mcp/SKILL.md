@@ -4,9 +4,9 @@ description: Run a Fysigo coaching practice through the Fysigo MCP server. Use w
 version: 1.20.0
 license: MIT
 metadata:
-  tool_count: "270"
+  tool_count: "271"
   server_url: "https://app.fysigo.com/api/mcp/mcp"
-  catalog_version: "df6af955c4bf"
+  catalog_version: "f5bec143bf25"
 ---
 
 # Fysigo MCP
