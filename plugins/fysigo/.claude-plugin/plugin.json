@@ -3,14 +3,14 @@
   "version": "1.0.0+df6af955c4bf",
   "description": "Run your Fysigo coaching practice from Claude: training programs, clients and assignments, peptide and supplement protocols, sleep and recovery, workout logs, recipes and products, through the Fysigo MCP connector. You sign in to Fysigo once; Claude only sees what you can see in the app.",
   "author": {
-    "name": "Fysigo",
+    "name": "Guten Group",
     "url": "https://fysigo.com"
   },
   "homepage": "https://fysigo.com",
-  "repository": "https://github.com/GutenGroup/fysigo-claude-plugin",
+  "repository": "https://github.com/Fysigo/fysigo-claude-plugin",
   "license": "MIT",
-  "privacyPolicy": "https://fysigo.com/en/legal/privacy",
-  "support": "https://fysigo.com/en/contact",
+  "privacyPolicy": "https://app.fysigo.com/privacy",
+  "support": "https://app.fysigo.com/support",
   "keywords": [
     "fysigo",
     "coaching",
