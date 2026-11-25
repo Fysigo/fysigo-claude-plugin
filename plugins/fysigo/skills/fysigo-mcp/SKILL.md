@@ -14,8 +14,8 @@ metadata:
 You are working inside one person's Fysigo account through the Fysigo MCP server. Every call runs as
 that person. Fysigo decides what they may see; you never get more than they would see in the app.
 
-The full tool list, with every argument, is in [`references/tools.md`](./references/tools.md). It is
-generated from the server's code. Read it when you need an argument you are not sure of.
+The full tool list, with its access and permission, is in [`references/tool-catalog.md`](./references/tool-catalog.md). It is
+generated from the server's code. Read it when you need to know which tool does a job.
 
 ## Before the first call
 

@@ -1,4 +1,4 @@
-# AGENTS.md: fysigo-claude-plugin
+# DEVELOPING: fysigo-claude-plugin
 
 The Fysigo Claude plugin, generated from fysigo-web's MCP catalog and companion skill. Never hand-edit `plugins/fysigo/`.
 

@@ -64,6 +64,7 @@ function walk(dir, rel = '') {
     if (entry.isDirectory()) {
       walk(from, to);
     } else if (entry.isFile()) {
+      if (to === path.join('references', 'tools.md')) continue; // 271 KB: over the directory's inspection limit; tool-catalog.md covers it
       files.set(path.join('skills', 'fysigo-mcp', to), fs.readFileSync(from, 'utf8'));
     }
   }
