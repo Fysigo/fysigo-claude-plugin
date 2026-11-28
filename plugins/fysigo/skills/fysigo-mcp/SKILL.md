@@ -1,12 +1,12 @@
 ---
 name: fysigo-mcp
-description: Run a Fysigo coaching practice through the Fysigo MCP server. Use when the Fysigo tools are connected and a coach or member asks to build, change, assign, review or log a training program, for example "put Maria on a hip program", "who are my clients", "who is on what", "how did Anna do this week", "log my drills", "set up my peptide protocol", "change my supplement stack", "log my morning dose", "sync my Oura", "rate last night's sleep", "log my squat set" or "set my time zone", "create a recipe product", "submit my bundle for review", "how are my product sales", "read the protocol I bought" or "adopt the protocol I bought", "what can my business staff do", "who on my staff can manage the schedule" or "let Maria manage my storefront", or "what sleep data did Alex share with me under our grant". Teaches the available tools, the order to call them in, and how to report what a result is based on and what it cannot tell.
-version: 1.20.0
+description: 18+ only. Run a Fysigo coaching practice through the Fysigo MCP server. Use when the Fysigo tools are connected and a coach or member asks to build, change, assign, review or log a training program, for example "put Maria on a hip program", "who are my clients", "who is on what", "how did Anna do this week", "log my drills", "set up my peptide protocol", "change my supplement stack", "log my morning intake", "sync my Oura", "rate last night's sleep", "log my squat set" or "set my time zone", "create a recipe product", "submit my bundle for review", "how are my product sales", "read the protocol I bought" or "adopt the protocol I bought", "what can my business staff do", "who on my staff can manage the schedule" or "let Maria manage my storefront", or "what sleep data did Alex share with me under our grant". Teaches the available tools, the order to call them in, and how to report what a result is based on and what it cannot tell.
+version: 1.20.1
 license: MIT
 metadata:
-  tool_count: "271"
+  tool_count: "286"
   server_url: "https://app.fysigo.com/api/mcp/mcp"
-  catalog_version: "f5bec143bf25"
+  catalog_version: "b8be7814d709"
 ---
 
 # Fysigo MCP
@@ -16,6 +16,11 @@ that person. Fysigo decides what they may see; you never get more than they woul
 
 The full tool list, with its access and permission, is in [`references/tool-catalog.md`](./references/tool-catalog.md). It is
 generated from the server's code. Read it when you need to know which tool does a job.
+
+Every tool publishes explicit boolean readOnlyHint, destructiveHint and openWorldHint annotations.
+A destructive hint covers overwrites, cancellations and irreversible commitments as well as deletion.
+An open-world hint identifies public publishing or an external service call, including Oura, Google,
+Anthropic and Stripe. Read the generated catalog for each tool’s classification.
 
 ## Before the first call
 
@@ -129,7 +134,7 @@ through the same checks as the Fysigo iPhone app, so they refuse what the app wo
    Items need `prescription` (name, amount, unit, route) and `logistics` (`local_time` as HH:MM,
    `weekdays` 1–7 with 1 = Monday, `reminder_enabled`). An item may instead carry the optional
    `form`: `powder` with strength_amount/strength_unit as the mass (e.g. 10, "g") saves a
-   quantity-1 dose, `liquid` with `amount` as the volume in mL (e.g. 5) saves no strength, and a
+   quantity-1 intake, `liquid` with `amount` as the volume in mL (e.g. 5) saves no strength, and a
    count form (`capsule`, `tablet`, `softgel`, …) keeps `amount` as the count with
    strength_amount/strength_unit for what one contains. How a supplement is taken goes in
    `logistics.intake_conditions` (food, meal_timing, fasting, take_with / avoid_with chips plus
@@ -139,48 +144,76 @@ through the same checks as the Fysigo iPhone app, so they refuse what the app wo
    optional; copy their shape from an existing protocol. For a blend or custom compound, give the
    item a fresh UUID v4 that is not a catalog id (it becomes the member's own compound with vial
    tracking) and list its constituents in `logistics.blend` (`name`, `mass_mg` per vial; the sum
-   must not exceed `product.total_mass_mg`); `get_my_protocols` returns each constituent with
-   `per_dose_mg` computed from the prescription.
+   must not exceed `product.total_mass_mg`); `get_my_protocols` returns each constituent as
+   entered, with no per-intake amount.
    A compound appears **once** per protocol: one item, one vial. A second amount or time of the
-   same compound is a dose line, another schedule rule on that item with its own amount and unit
+   same compound is a scheduled intake entry, another schedule rule on that item with its own amount and unit
    (for example 0.5 mg every evening plus 2.5 mg Tuesday and Friday mornings until a set date).
-   A rule without an amount uses the prescription amount. Sending the same compound twice is
+   A rule without an amount uses the member-entered amount. Sending the same compound twice is
    refused (a duplicate-compound error naming it) and nothing is saved.
-3. Show the person the full protocol you will save, with each dose, unit and time, and wait for a
+3. Show the person the full protocol you will save, with each intake, unit and time, and wait for a
    yes. Then save, and read it back with `get_my_protocols`.
-4. `get_my_doses_today` lists today's doses with `kind`, `assignmentId` and `occurrenceKey`.
+4. `get_my_doses_today` lists today's intake entries with `kind`, `assignmentId` and `occurrenceKey`.
    `log_my_dose` marks one `done` or `skipped` with those three values, unchanged. When the person
    says when they actually took it, pass that as taken_at (ISO-8601 with offset); omitted means now.
-   For a dose from an earlier day (up to 6 days back), call `get_my_doses_today` with `date`
+   For an intake from an earlier day (up to 6 days back), call `get_my_doses_today` with `date`
    (YYYY-MM-DD) and log it with the keys that call returns, passing the real take time as taken_at.
    An older day is refused as outside the 7-day window.
-   Logging a dose again with a new taken_at edits the recorded take time (same status, one row).
-   For history older than that window, or a dose with no active schedule or a different amount,
-   use `backfill_my_dose` (one dose: any past takenAt, compoundName or compoundId or a stack itemId,
+   Logging an intake again with a new taken_at edits the recorded take time (same status, one row).
+   For history older than that window, or an intake with no active schedule or a different amount,
+   use `backfill_my_dose` (one intake: any past takenAt, compoundName or compoundId or a stack itemId,
    amount and unit; future times refused). To load many, `import_my_dose_history` takes up to 300
    rows per call and answers each row with created, duplicate or error, so a rerun never logs
    twice. Read the per-row results back to the person. To load vial history too, call
    `mix_my_vial` oldest first with a past mixedAt: each newer mix closes the previous vial then.
-5. `get_my_vials` lists the person's active peptide vials, soonest to run out first, with units
-   per dose, doses left, use-by and why a vial needs attention. `mix_my_vial` records mixing a
+5. For **Add vial / My vials**, `scan_my_vial_label` reads 1–4 photos of one vial only
+   after explicit Anthropic photo consent. It returns editable printed facts and a private photoPath;
+   confirm the facts, then `add_my_vial` saves the member's own values. `get_my_vial_workspace`
+   reads those vials, supplier links and compound/unit defaults. `add_my_supplier` saves a source
+   name and product URL. `set_my_vial_use_before` sets a chosen date or none and optionally saves
+   the member's duration as a default. Never recommend doses or durations, or calculate water to
+   preserve units: a previous mix is the member's editable historical entry. Supplier product images
+   are excluded from MCP and plugin results.
+   For **Stock**, `get_my_stock` reads current counts and revisions.
+   `parse_order_document` previews order/email text, 1–4 photos or one PDF only after
+   explicit Anthropic consent. Unknown facts remain null. Review each selected line
+   with the member, confirm the form and count unit (including capsules, tablets, grams or mL),
+   then call `add_stock_lines` with `reviewed=true` and a fresh requestId;
+   reuse that requestId only for an exact retry. `update_stock` requires the current
+   revision and the member’s explicit count/place; zero finishes that stock row.
+   `add_my_vial` accepts stockItemId from `get_my_stock` plus a stockRequestId UUID;
+   save consumes one unopened vial atomically, and exact retries reuse the same payload
+   and UUID. Only compatible vial records can be mixed. No count changes during parsing. Never infer individual counts from packs.
+   Automatic forwarded email is unavailable: paste its text instead. Stock tools return
+   no vendor images, and never suggest doses, water, storage places or use-before dates.
+5. `get_my_vials` lists the person's active peptide vials, soonest use-by first, as the facts they
+   entered (vial mass, water, syringe scale, scheduled amount, lot, dates) plus use-by. `mix_my_vial` records mixing a
    **new** vial from its label facts (it closes the vial currently in use for that compound, and
    BAC water may not exceed the vial's capacity); `finish_my_vial` closes a named vial for good.
-   Units and doses-left numbers are arithmetic on the person's recorded numbers — report them,
-   never suggest them.
+   Fysigo is a log with no dosing tools: no concentration, syringe units, remaining amount or
+   run-out is returned. Never calculate or suggest them; the person works out their own numbers.
+   `get_my_vial_use_windows` reads the person's own saved overall and per-compound defaults.
+   `set_my_vial_use_window` saves only a duration the person chooses; omit compoundId for the
+   overall default, or pass it for one compound. A null duration clears that preference. Never
+   recommend or invent a duration. New mixes resolve explicit useWindowDays, then saved compound,
+   then saved overall; with none there is no calculated use-by. Saving preferences leaves open
+   vials unchanged. Only on an explicit request, `apply_my_vial_use_window` applies the saved
+   window (or a user-chosen per-vial override) to an open vial from its original mixedAt in the
+   account timeZone returned with preferences.
 6. `get_my_dose_history` is the adherence view the app's peptide trends page shows: over a date
-   range (default the last 30 days, at most 90) it returns, per protocol, how many doses were
-   prescribed and how many were confirmed, missed or skipped, plus the individual dose slots with
+   range (default the last 30 days, at most 90) it returns, per protocol, how many intake entries were
+   scheduled by the member and how many were confirmed, missed or skipped, plus the individual intake slots with
    their status and `takenAt`. With `subject: "dog"` it reads the dog's assignments. It covers active
-   assignments only; a paused or ended protocol's doses are not in the counts.
-   For the doses themselves over any date range, including doses loaded with `backfill_my_dose` or
+   assignments only; a paused or ended protocol's intake entries are not in the counts.
+   For the intake entries themselves over any date range, including intake entries loaded with `backfill_my_dose` or
    `import_my_dose_history` that have no assignment, use `get_my_doses_range` (from/to, at most 62
    days per call, `kind` peptide, supplement or all). It is the same list the app's Peptide timeline
-   and Supplement timeline show: each row has the dose in its own units, `at`, status, and the
+   and Supplement timeline show: each row has the intake in its own units, `at`, status, and the
    `backfilled`, `oneOff` and `asNeeded` flags. Page with `nextOffset`, and walk further with `earlier`.
 7. `get_my_protocol_history` and `get_my_supplement_stack_history` return every saved version of
    the person's peptide protocols and supplement stack (oldest first): effective_from, the full
-   snapshot and a diff (item added/removed, dose, days, time). To correlate, line versions and
-   dose `takenAt` times up against `get_my_sleep` (sleep score, HRV, resting heart rate) and the
+   snapshot and a diff (item added/removed, intake, days, time). To correlate, line versions and
+   intake `takenAt` times up against `get_my_sleep` (sleep score, HRV, resting heart rate) and the
    training reads. History starts with saves made after version tracking shipped. Report the
    alignment; never claim a cause.
 8. Supplement bottles: `scan_my_supplement_label` reads 1-3 label photos (front, Supplement Facts)
@@ -190,21 +223,21 @@ through the same checks as the Fysigo iPhone app, so they refuse what the app wo
    `photosKept`), never in the shared catalog. `addToCatalog: true` confirms the label in the
    shared catalog (label data only; everyone's scans of the same product resolve to one entry) and
    returns its catalogId; pass `stackItemId` to link the scan to that stack item. Amounts are per
-   the printed serving, never a dose to suggest.
+   the printed serving, never an intake to suggest.
 9. As needed supplements have no slot in `get_my_doses_today`. When the person says they took one,
    `log_my_as_needed_dose` with the item's id from `get_my_protocols` and, if they took it
-   earlier, `takenAt` (up to 7 days back). Every call is one more dose, so never retry a call that
-   succeeded. `list_my_as_needed_doses` shows today's doses with their logIds;
-   `undo_my_as_needed_dose` with a `logId` undoes that dose (voided, never erased).
+   earlier, `takenAt` (up to 7 days back). Every call is one more intake, so never retry a call that
+   succeeded. `list_my_as_needed_doses` shows today's intake entries with their logIds;
+   `undo_my_as_needed_dose` with a `logId` undoes that intake (voided, never erased).
 
-Never suggest a dose, a compound or a cycle. Record what the person tells you. If a save is
+Never suggest an intake, a compound or a cycle. Record what the person tells you. If a save is
 refused for terms (`peptide_tracking_terms_required` or upload terms), send them to the Fysigo app
 to accept them once; you cannot accept terms for them.
 
 With `subject: "dog"`, `get_my_protocols`, `get_my_doses_today`, `save_my_peptide_protocol` and
 `save_my_supplement_stack` (the dog's own stack, kept as one dog protocol)
 read and save the person's own dog log (omitted means their own and never includes dog rows), and
-`log_my_dose` logs the dog's dose with the assignmentId from `get_my_doses_today` run with
+`log_my_dose` logs the dog's intake with the assignmentId from `get_my_doses_today` run with
 `subject: "dog"`. Ownership is enforced by the server; a dog call with My dog off answers
 `my_dog_not_enabled`.
 
@@ -241,7 +274,7 @@ Never interpret sleep medically. Report the numbers and what changed.
 - `get_my_workout_history` returns the training record: the program's last 8 weeks (done, missed, skipped, carried), the next workout, recorded sessions from any device with their effort, and kettlebell completions (each with its score: minutes, rounds, partial reps and the day).
 - `set_my_session_effort` records or changes a recorded session's effort (1 to 10, or null), using a `sessionId` from the history. It replaces the effort stored for that session; confirm before overwriting one that is set. It is a different record from the effort given when finishing a workout.
 - `get_my_workout_queue` returns the program as the app's Workouts screen shows it: rolling queue or calendar dates, the program (assignmentId, name, week), and each upcoming card with status and projected or pinned date. `move_my_workout` moves one: in a rolling queue it pins the card to a date (null unpins, back to queue order); in a calendar program it changes the scheduled date. `scheduledWorkoutId` comes from `get_my_workout_queue`.
-- `search_exercises` finds exercises by name for a substitution; each result's id feeds `swap_my_exercise` (replace one exercise in the started workout; `unswap_my_exercise` restores the prescribed one). `reorder_my_exercises` changes the exercise order of the started workout: send every `exerciseId` from `get_my_today_workout` in the new order, or [] to go back to the program's order.
+- `search_exercises` finds exercises by name for a substitution; each result's id feeds `swap_my_exercise` (replace one exercise in the started workout; `unswap_my_exercise` restores the scheduled by the member one). `reorder_my_exercises` changes the exercise order of the started workout: send every `exerciseId` from `get_my_today_workout` in the new order, or [] to go back to the program's order.
 - `get_my_crossfit_sessions` returns the active CrossFit/kettlebell programs with each session's slug, name, format (emom, amrap or circuit) and last performed date. `log_my_crossfit_score` logs a session's score: `scoreKind` must match the session's format (emom takes `minutesCompleted`; amrap and circuit take `roundsCompleted`, amrap optionally `partialReps`), optionally `rpe` (1-10), `elapsedSec` and `performedOn`. Scores show up in `get_my_workout_history` under kettlebell completions.
 - `get_my_heart_rate_zones` returns the person's current heart-rate zone profiles, one per modality, with the four boundaries in bpm and the resting/maximum range behind them. `set_my_heart_rate_zones` changes one modality's zones (four ascending boundaries, optionally with minimum and maximum heart rate). The write is pinned to what the read just returned: if the zones changed elsewhere first, nothing is saved — read again and retry. The earlier version stays in the app's zone history, and zone history and pending recommendations stay in the app.
 - `get_my_next_up_settings` lists the person's active programs and whether each is proposed in the Now page's Next Up strip; `set_my_next_up_proposal` turns that on or off for one program (`kind` and `assignmentId` from the read). Only the proposal changes, not the program or its schedule.
@@ -255,14 +288,15 @@ Every write needs the `workoutId` from `get_my_today_workout`. If a write says t
 
 ## Job 7: my settings
 
-- `get_my_settings` returns the time zone, display units and workout weight unit. If the time zone is null, today's doses and reminders follow UTC and the app falls back to New York: ask the person where they live and set it.
+- `get_my_settings` returns the time zone, display units and workout weight unit. If the time zone is null, today's intake entries and reminders follow UTC and the app falls back to New York: ask the person where they live and set it.
 - `set_my_time_zone` takes an IANA Region/City name (America/New_York, Europe/Stockholm) or UTC, never an abbreviation like EST or an offset. Never guess it from a city name you are unsure of; confirm with the person.
 - `update_my_settings` changes the display units (metric or imperial) and the weight unit (kg or lb) in the app. The training tools here always use kg.
-- `get_my_uvb_window` answers how long the person needs in the sun today to make their vitamin D. It returns the vitamin D window for today (or a `date` you pass) — the span when the sun is above 35° with clear-sky UV index 3+, plus the best span above 45° — today's clear-sky UV index, and the minutes centred on solar noon to make a target amount of vitamin D (`targetIu`, default 2000) for their skin today (`skin` pale, light_tan, tanned, deep_tan, brown or dark; default: their saved skin tone, or tanned when none is saved — `skinSource` in the result says which) and how much of it is in the sun (`exposure` face_hands, tshirt_shorts, shirtless_shorts, swimsuit or naked; default shirtless_shorts). Times are the person's own clock. It needs a saved location: if none, set it under Settings › Follow the sun first. It is a clear-sky estimate — clouds, glass and shade cut the real UVB — and the IU are model estimates, roughly ±2×.
-- `set_my_skin_tone` saves the person's skin tone by hand (pale, light_tan, tanned, deep_tan, brown or dark). A deeper tan makes less vitamin D per minute, so `get_my_uvb_window` gives more minutes until a new tone is saved.
+- `get_my_uvb_window` answers when the sun is high enough for vitamin D today and, for a target the person enters, how many minutes. It returns the vitamin D window for today (or a `date` you pass) — the span when the sun is above 35° with clear-sky UV index 3+, plus the best span above 45° — today's clear-sky UV index, and, only when the person gives their own target (`targetIu`; there is no default, and never pick one for them), the minutes centred on solar noon for that target for their skin today (`skin` pale, light_tan, tanned, deep_tan, brown or dark; default: their saved skin tone, or tanned when none is saved — `skinSource` in the result says which) and how much of it is in the sun (`exposure` face_hands, tshirt_shorts, shirtless_shorts, swimsuit or naked; default shirtless_shorts). Times are the person's own clock. It needs a saved location: if none, set it under Settings › Follow the sun first. It is a clear-sky estimate — clouds, glass and shade cut the real UVB — and the IU are model estimates, roughly ±2×.
+- `set_my_skin_tone` saves the person's skin tone by hand (pale, light_tan, tanned, deep_tan, brown or dark). A deeper tan makes less vitamin D per minute, so `get_my_uvb_window` gives more minutes for the same entered target until a new tone is saved.
 - `estimate_my_skin_tone_from_photo` estimates the tone from one photo and saves it: send `imageBase64` (base64, no data: prefix, at most ~14,000,000 characters) and `mimeType` (image/jpeg, image/png, image/webp). Before calling, explain that the selected photo will be sent to Anthropic’s Claude AI service for skin-tone analysis and may contain personal or health information. Ask for explicit permission; set `anthropicPhotoConsent: true` only after the person agrees, never just because they supplied a photo. Fysigo saves only the estimate, not the photo. The upload terms must also be accepted in the app. If they decline or the result looks off, use `set_my_skin_tone` manually.
 - `get_my_notification_settings` returns which Fysigo emails the person gets (new bookings, booking updates, chat messages, new lab values; absent means on). `update_my_notification_settings` turns those four switches on or off — send only what changes.
 - `get_my_profile` returns the person's display name. `set_my_display_name` changes it (1-120 characters); it is a display name, not the public handle.
+- `list_my_ai_activity` lists what AI apps did through your connection (time, AI app, tool, ok or error), newest first, your own calls only; it never holds arguments or results.
 - `get_my_language` / `set_my_language` read and change the app language (en or es; null means the app follows the device). `get_my_features` / `set_my_features` read and change the What I use switches (training, nutrition, body): a hidden area leaves the menu, its data stays. Send only the switches to change.
 - `list_my_briefings` and `get_my_briefing` read the briefing documents the person's coach shared, as plain text.
 
@@ -274,7 +308,7 @@ Every write needs the `workoutId` from `get_my_today_workout`. If a write says t
 ## My day
 
 - `get_my_day` returns the person's whole Now timeline for today in one call — the same feed the
-  iPhone's Now screen shows: meals, workouts, doses, sleep and the day's other items, each with
+  iPhone's Now screen shows: meals, workouts, intake entries, sleep and the day's other items, each with
   its label, time and status, plus which items are still upcoming and which are past. Read it
   first when the person asks what their day looks like or what is next. It needs the protocols,
   training, sleep and nutrition scopes because the feed can carry all of them.
@@ -303,13 +337,13 @@ A GPS route never comes back through these tools, only whether one exists.
   "on NanoVi days your HRV tended to be higher", never "NanoVi raised your HRV"; with fewer than five
   days on a side (`status: "insufficient-data"`), say it needs more days. Daily energy and other
   check-in answers are compared in the app's Patterns, not here; bloodwork is not included.
-- `get_my_dose_correlations` does the same comparison for days a confirmed peptide or supplement dose
+- `get_my_dose_correlations` does the same comparison for days a confirmed peptide or supplement intake
   was logged versus days it was not, against daily HRV, resting heart rate, sleep, readiness and skin
   temperature deviation. Send a `label` (and optionally `kind`) for one compound; without one, it
   returns the strongest comparisons. Say "on days this compound was logged, HRV tended to be lower",
   never that the compound caused the change, and never frame the result as a warning. `phiIncluded:
   false` means supplement logs and Garmin (or other Junction) nights were left out; Oura daily rows
-  and peptide dose logs are still included. Onset windows, dose-response and symptom logs are not
+  and peptide intake logs are still included. Onset windows, intake-response and symptom logs are not
   part of this result.
 
 ## Job 9: my body
@@ -422,7 +456,7 @@ The journey, in order:
 `create_protocol_listing` has a second mode: pass `protocolId` (from `get_my_protocols`) to
 source the saleable items from one of the person's own saved peptide protocols. Only their own
 protocols resolve — a foreign id answers not_found and nothing is created. Personal notes and
-vial logistics are stripped. The strict importer preserves compound, dose, route, timing and
+vial logistics are stripped. The strict importer preserves compound, intake, route, timing and
 explicit weekdays; unsupported schedules and cycles are refused rather than approximated,
 under the `disclaimerVersion` the coach sets. This mode needs the marketplace:write **and**
 protocols:read scopes, because it reads personal protocols.
@@ -435,9 +469,9 @@ only ever act as the signed-in person.
 1. `read_product` returns the listing card for any published product. The payload arrives only
    with a valid entitlement, including an explicit active membership inclusion (the author reads the current version instead); otherwise `content`
    is null and `contentError` says why. For a bundle, each item carries an entitlement flag.
-2. For a protocol product, dose and cycle fields stay redacted until the person accepts the
+2. For a protocol product, intake and cycle fields stay redacted until the person accepts the
    clinical terms for that version: `acknowledge_protocol` with the `versionId` and its
-   `termsVersion`. Acknowledging is not consent to a dose; it only unredacts the published text.
+   `termsVersion`. Acknowledging is not consent to an intake; it only unredacts the published text.
 3. `adopt_protocol` copies that version into the person's own peptide protocols through the same
    personal save path as the app — they get an editable, caller-owned paused protocol that survives a
    refund. It needs the purchase, the ack, and **both** the marketplace:write and protocols:write
@@ -446,7 +480,7 @@ only ever act as the signed-in person.
    reservation protects interrupted saves: recovery verifies the exact caller-owned peptide
    target and finalizes lineage without overwriting personal edits; an absent target remains
    pending. Reserved and completed adoption targets cannot be imported for resale. Adoption never invents
-   medical detail: an item without an authored dose, unit, route, time or explicit weekly
+   medical detail: an item without an authored intake, unit, route, time or explicit weekly
    schedule — or carrying cycle weeks — refuses the adoption naming the compounds; schedules
    that import carry their authored weekdays verbatim. The copy is saved paused with reminders
    off, and the person activates it in the app.
@@ -692,7 +726,7 @@ Start from `list_managed_communities` to find a space you manage, then schedule.
 Read `get_my_nutrition_today` again after `log_my_food` or an unclear failure, and before
 `delete_my_food_log` — a deleted entry cannot be restored, only logged again as a new one.
 - `get_my_meal_plan` returns the meal plan the coach assigned (days, meals, foods with serving and macros), or `plan: null`. `get_my_nutrition_targets` returns the numbers behind the dials for one day: the active targets and what was eaten. Targets are coach-set and read-only here. `get_my_nutrition_trends` returns daily totals and averages over up to 365 days.
-- `get_my_supplement_history` returns supplement doses over up to 90 days: per supplement the scheduled, taken and skipped counts, plus each logged dose. If it says the history is unavailable, say so; do not report "nothing taken".
+- `get_my_supplement_history` returns supplement intake entries over up to 90 days: per supplement the scheduled, taken and skipped counts, plus each logged intake. If it says the history is unavailable, say so; do not report "nothing taken".
 
 ## Job 18: community routine stack and feature requests
 
@@ -757,7 +791,7 @@ Never present a result as more than its evidence. "Anna completed 4 of 9 logged 
 
 ## Hard rules
 
-1. No write without the person's yes to that specific change. A set, dose or rating the person
+1. No write without the person's yes to that specific change. A set, intake or rating the person
    tells you to log is that yes. The writes are `create_program`, `edit_program`,
    `archive_program`, `assign_program`, `log_drill`, `edit_client_supplement_schedule`,
    `save_my_peptide_protocol`, `save_my_supplement_stack`, `log_my_dose`, `backfill_my_dose`, `import_my_dose_history`, `log_my_as_needed_dose`,
@@ -772,7 +806,7 @@ Never present a result as more than its evidence. "Anna completed 4 of 9 logged 
    `adopt_protocol`, and `set_business_operation`, and `start_provider_membership_checkout`
    and `cancel_provider_membership_billing` (the person's confirmation object /
    `confirmEndOfPeriod: true` is that yes, and checkout still never charges without the person
-   finishing Stripe's own page). Fifteen of them replace or remove what was there, and the old version
+   finishing Stripe's own page). Some writes replace or remove what was there, and the old version
    is gone: `edit_program`, `edit_client_supplement_schedule`, `save_my_peptide_protocol`,
    `save_my_supplement_stack`, `log_my_sleep_rating`, `save_my_sleep_answers`, `log_my_set` (same set number), `set_my_session_effort`, `update_my_activity`, `delete_my_activity`, `untag_my_day`,
    `remove_my_set`, `update_listing`, `edit_recipe`, `set_my_body_goals` (it also recalculates the
@@ -784,8 +818,8 @@ Never present a result as more than its evidence. "Anna completed 4 of 9 logged 
    `create_listing` and its typed shortcuts.
 2. Never invent an id, a count or a week.
 3. This is health data. Discuss a client only with the person whose account you are in.
-4. No medical claims and no dosing advice. Say what the training does, not what it cures; record
-   doses, never recommend them.
+4. No medical claims and no intake logging advice. Say what the training does, not what it cures; record
+   intake entries, never recommend them.
 5. A `not_found` is an answer. Do not work around it.
 
 
@@ -825,3 +859,7 @@ Start a practitioner setup/status request with `appointments_get_setup_checklist
 Home-visit ZIP coverage is separate from studio-only services. Only an owner may configure missing shared service coverage or choose/activate a business plan; staff owner-managed steps have no privileged action or financial query. A paid service needs actual effective business enrollment; a free-only service does not acquire an invented plan requirement. Payment readiness false alone does not prove a missing plan. Each practitioner personally reads/accepts the applicable published service agreement; client intake/terms status does not invalidate an already accepted provider agreement. Certificates remain optional reminders.
 
 Use the returned exact assignment for `appointments_get_catalog` and `appointments_configure_service`; preserve versions, rates and additional provider conditions rather than replacing the payload with checklist fields. Use `business_get_commercial_billing` before an explicitly chosen plan action; never dispatch, reconcile or select a plan from a checklist read. For personal assent, read the full current agreement from the selected catalog and use `appointments_accept_terms` only after that token holder explicitly acknowledges the exact document identity/version/hash. A checklist click/read never records consent.
+
+## Record why a protocol changed
+
+Record or revise a decision only when the member asks; never decide or change a protocol unless they ask. Use `log_protocol_decision` after the member supplies the reasoning for a schedule change. This records rationale, not a schedule change. Link only IDs returned by the member's own protocol/stack history. `get_protocol_decisions` defaults to the member and excludes dog rows; explicitly pass subject dog for the dog's history. To revise a rationale, read the latest revision, then call `update_protocol_decision` with its expected_revision and a complete replacement snapshot. Earlier revisions remain unchanged. If a write outcome is uncertain, read before retrying; writes are not idempotent. Evidence is member supplied, never verified causation. These three tools belong only to the full MCP endpoint, never a future ChatGPT-scoped allowlist. The app displays read-only chart markers and due reviews.

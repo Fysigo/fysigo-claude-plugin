@@ -1,7 +1,7 @@
 {
   "name": "fysigo",
-  "version": "1.0.0+f5bec143bf25",
-  "description": "Run your Fysigo coaching practice from Claude: training programs, clients and assignments, peptide and supplement protocols, sleep and recovery, workout logs, recipes and products, through the Fysigo MCP connector. You sign in to Fysigo once; Claude only sees what you can see in the app.",
+  "version": "1.0.1+b8be7814d709",
+  "description": "18+ only. Run your Fysigo coaching practice from Claude: training programs, clients and assignments, member-entered peptide and supplement logs and schedules, sleep and recovery, workout logs, recipes and products, through the Fysigo MCP connector. You sign in to Fysigo once; Claude only sees what you can see in the app.",
   "author": {
     "name": "Guten Group",
     "url": "https://fysigo.com"
@@ -9,8 +9,8 @@
   "homepage": "https://fysigo.com",
   "repository": "https://github.com/Fysigo/fysigo-claude-plugin",
   "license": "MIT",
-  "privacyPolicy": "https://app.fysigo.com/privacy",
-  "support": "https://app.fysigo.com/support",
+  "privacyPolicy": "https://fysigo.com/en/legal/privacy",
+  "support": "https://fysigo.com/en/contact",
   "keywords": [
     "fysigo",
     "coaching",

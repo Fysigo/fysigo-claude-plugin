@@ -1,5 +1,9 @@
 # Changelog — fysigo-mcp
 
+## 1.20.1 — 2026-11-28
+
+Written against tool catalog `b8be7814d709` (286 tools). Amounts and schedules are the member's own entries; no dosing values are computed or returned. `get_my_uvb_window` gives vitamin D minutes only for a target the person enters. Three protocol decision tools: `get_protocol_decisions` reads; `log_protocol_decision` and `update_protocol_decision` append a recorded rationale and leave schedules unchanged, only when the member asks.
+
 ## 1.10.0 — 2026-10-22
 
 Written against tool catalog `39a4cb2c4e1f` (39 tools). `list_my_clients` (Coach package, read-only) lists the clients the coach actively coaches, with `id` (the `clientId` the other tools take), `name`, `engagement_status` and `self`. Jobs 2 and the client-supplements section now take the `clientId` from it instead of asking the coach to copy it from a Fysigo page. Paused, pending and ended engagements and archived clients are not listed; no email or health data comes back.
@@ -10,7 +14,7 @@ Written against tool catalog `4ac57c46f8bc`. `archive_program` is now marked des
 
 ## 1.9.0 — 2026-10-21
 
-Written against tool catalog `4fa8f2aba753`. Dose lines: a peptide schedule rule may carry its own `amount` and `unit`, so one compound (one vial) can hold several doses, e.g. 0.5 mg every evening and 2.5 mg Tue/Fri mornings. `get_my_doses_today` lists one entry per line with that line's amount. The same compound twice in one protocol is refused with `duplicate_compound` and nothing is saved (it used to save and give the second item the first item's schedule).
+Written against tool catalog `4fa8f2aba753`. Intake lines: a peptide schedule rule may carry its own `amount` and `unit`, so one compound (one vial) can hold several intake entries, e.g. 0.5 mg every evening and 2.5 mg Tue/Fri mornings. `get_my_doses_today` lists one entry per line with that line's amount. The same compound twice in one protocol is refused with `duplicate_compound` and nothing is saved (it used to save and give the second item the first item's schedule).
 
 ## 1.8.1 — 2026-10-19
 
@@ -30,7 +34,7 @@ Written against tool catalog `fb5bf65f881c` (30 tools). Job 5 gains bedtime setu
 
 ## 1.5.0 — 2026-10-18
 
-Written against tool catalog `869acd2f6e7a` (28 tools). Job 7, my settings: `get_my_settings`, `set_my_time_zone` (IANA name), `update_my_settings` (display units, weight unit). A null time zone means doses and reminders follow UTC and the app falls back to New York: ask and set it.
+Written against tool catalog `869acd2f6e7a` (28 tools). Job 7, my settings: `get_my_settings`, `set_my_time_zone` (IANA name), `update_my_settings` (display units, weight unit). A null time zone means intake entries and reminders follow UTC and the app falls back to New York: ask and set it.
 
 ## 1.4.0 — 2026-10-18
 
@@ -46,7 +50,7 @@ Written against tool catalog `7926c75148f6`. The tools now return only your own 
 
 ## 1.2.0 — 2026-10-17
 
-Written against tool catalog `699bfa3f784d` (16 tools). Job 4: the person's own peptide protocols and supplement stack (`get_my_protocols`, `save_my_peptide_protocol`, `save_my_supplement_stack`, `get_my_doses_today`, `log_my_dose`). Read first, send the whole protocol, confirm before saving, never suggest a dose.
+Written against tool catalog `699bfa3f784d` (16 tools). Job 4: the person's own peptide protocols and supplement stack (`get_my_protocols`, `save_my_peptide_protocol`, `save_my_supplement_stack`, `get_my_doses_today`, `log_my_dose`). Read first, send the whole protocol, confirm before saving, never suggest a intake amount.
 
 ## 1.1.1 — 2026-10-12
 
